@@ -44,24 +44,33 @@ monte_carlo_int_NB <- function(dat, mu, gamma, phi, gene.subset.n){
 
 ####  Match quantiles
 match_quantiles <- function(counts_sub, old_mu, old_phi, new_mu, new_phi){
-  new_counts_sub <- matrix(NA, nrow=nrow(counts_sub), ncol=ncol(counts_sub))
-  for(a in 1:nrow(counts_sub)){
-    for(b in 1:ncol(counts_sub)){
-      if(counts_sub[a, b] <= 1){
-        new_counts_sub[a,b] <- counts_sub[a, b]
-      }else{
-        tmp_p <- pnbinom(counts_sub[a, b]-1, mu=old_mu[a, b], size=1/old_phi[a])
-        if(abs(tmp_p-1)<1e-4){
-          new_counts_sub[a,b] <- counts_sub[a, b]  
-          # for outlier count, if p==1, will return Inf values -> use original count instead
-        }else{
-          new_counts_sub[a,b] <- 1+qnbinom(tmp_p, mu=new_mu[a, b], size=1/new_phi[a])
-        }
-      }
+  new_counts_sub <- 
+    bplapply(1:length(counts_sub),
+             match_quantiles_inner,
+             counts_sub, old_mu, old_phi, new_mu, new_phi)
+  new_counts_sub_mx <- 
+    matrix(as.numeric(new_counts_sub), nrow = nrow(counts_sub))
+  return(new_counts_sub_mx)
+}
+
+match_quantiles_inner <- 
+  function(n, counts_sub, old_mu, old_phi, new_mu, new_phi) {
+  if(counts_sub[n] <= 1){
+    res <- counts_sub[n]
+  }else{
+    index <- ifelse(n%%length(old_phi)==0, length(old_phi), n%%length(old_phi))
+    tmp_p <- pnbinom(counts_sub[n]-1, mu=old_mu[n], size=1/old_phi[index])
+    if(abs(tmp_p-1)<1e-4){
+      res <- counts_sub[n]  
+      # for outlier count, if p==1, will return Inf values -> use original count instead
+    }else{
+      index <- ifelse(n%%length(new_phi)==0, length(new_phi), n%%length(new_phi))
+      res <- 1+qnbinom(tmp_p, mu=new_mu[n], size=1/new_phi[index])
     }
   }
-  return(new_counts_sub)
+  return(res)
 }
+
 
 
 
