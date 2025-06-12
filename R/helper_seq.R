@@ -47,7 +47,8 @@ match_quantiles <- function(counts_sub, old_mu, old_phi, new_mu, new_phi){
   new_counts_sub <- 
     bplapply(1:length(counts_sub),
              match_quantiles_inner,
-             counts_sub, old_mu, old_phi, new_mu, new_phi)
+             counts_sub, old_mu, old_phi, new_mu, new_phi, 
+             BPPARAM = SnowParam())
   new_counts_sub_mx <- 
     matrix(as.numeric(new_counts_sub), nrow = nrow(counts_sub))
   return(new_counts_sub_mx)
